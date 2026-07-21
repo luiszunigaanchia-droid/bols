@@ -1,0 +1,813 @@
+<!DOCTYPE html>
+<html lang="es-CR">
+<head>
+  <!-- Firma del autor -->
+  <meta name="x-author-signature" content="Autor: Luis Alejandro Zúñiga Anchia | Creado: 2025-10-27 | Mejorado: 2025-10-31">
+  <script>/* sig:Autor: Luis Alejandro Zúñiga Anchia | Creado: 2025-10-27 | Mejorado: 2025-10-31 */</script>
+
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bitácora Bandas Oligoclonales v2.0 — Hematología</title>
+<style>
+  :root{
+    --line:#e5e7eb;--fg:#111827;--muted:#6b7280;
+    --accent:#2563eb;--success:#10b981;--danger:#dc2626;--warning:#f59e0b;
+  }
+  *{box-sizing:border-box}
+  html,body{background:#fff;color:var(--fg);font:14px/1.4 system-ui,Segoe UI,Roboto,Helvetica,Arial;margin:0;padding:0}
+  h1{font-size:18px;margin:10px 0 12px;font-weight:600}
+  h2{font-size:16px;margin:12px 0 8px;font-weight:600}
+  .wrap{max-width:1200px;margin:20px auto;padding:0 16px}
+  
+  /* Toast notifications */
+  .toast-container{position:fixed;top:20px;right:20px;z-index:9999;display:flex;flex-direction:column;gap:10px}
+  .toast{background:#111827;color:#fff;padding:12px 18px;border-radius:10px;box-shadow:0 4px 12px rgba(0,0,0,0.15);
+    animation:slideIn 0.3s ease;max-width:350px;font-size:14px;display:flex;align-items:center;gap:10px}
+  .toast.success{background:var(--success)}
+  .toast.error{background:var(--danger)}
+  .toast.warning{background:var(--warning)}
+  @keyframes slideIn{from{transform:translateX(400px);opacity:0}to{transform:translateX(0);opacity:1}}
+  
+  fieldset{border:1px solid var(--line);border-radius:10px;padding:14px;margin-bottom:14px;background:#fafafa}
+  legend{color:var(--muted);padding:0 8px;font-weight:600;font-size:13px}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .grid-3{grid-template-columns:repeat(3,1fr)}
+  .grid-4{grid-template-columns:repeat(4,1fr)}
+  
+  label{display:block;font-size:12px;color:var(--muted);margin:6px 0 3px;font-weight:500}
+  input,select,textarea{width:100%;padding:9px;border:1px solid var(--line);border-radius:10px;background:#fff;font-size:14px;font-family:inherit}
+  input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(37,99,235,0.1)}
+  input.input-error{border-color:var(--danger);box-shadow:0 0 0 3px rgba(220,38,38,0.1)}
+  textarea{min-height:70px;resize:vertical}
+  
+  button{cursor:pointer;border:1px solid var(--line);background:#f8fafc;border-radius:10px;padding:9px 14px;font-weight:600;font-size:14px;transition:all 0.2s;font-family:inherit}
+  button:hover{opacity:0.9;transform:translateY(-1px)}
+  button:active{transform:translateY(0)}
+  button:disabled{opacity:0.5;cursor:not-allowed;transform:none}
+  button.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+  button.success{background:var(--success);color:#fff;border-color:var(--success)}
+  button.warn{background:var(--danger);color:#fff;border-color:var(--danger)}
+  
+  .btn-row{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+  .btn-row button{flex:1;min-width:120px}
+  
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin:16px 0}
+  .stat-card{background:#f8fafc;border:1px solid var(--line);border-radius:10px;padding:14px;text-align:center}
+  .stat-value{font-size:28px;font-weight:700;color:var(--accent);margin:4px 0}
+  .stat-label{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px}
+  
+  .tbl{width:100%;border-collapse:collapse;margin:12px 0;font-size:13px}
+  .tbl th,.tbl td{border:1px solid var(--line);padding:8px 10px;text-align:left}
+  .tbl th{background:#f3f4f6;font-weight:600;position:sticky;top:0;z-index:1}
+  .tbl tbody tr:hover{background:#f9fafb}
+  .tbl-actions{display:flex;gap:6px;justify-content:center}
+  .tbl-actions button{padding:4px 8px;font-size:12px;min-width:auto}
+  
+  .search-box{margin:12px 0;padding:10px;background:#f8fafc;border-radius:10px;display:flex;gap:8px;align-items:center}
+  .search-box input{flex:1;margin:0}
+  .search-box button{min-width:80px}
+  
+  .empty-state{text-align:center;padding:40px 20px;color:var(--muted)}
+  .empty-state svg{width:64px;height:64px;opacity:0.3;margin-bottom:12px}
+  
+  .modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:1000;align-items:center;justify-content:center}
+  .modal.active{display:flex}
+  .modal-content{background:#fff;border-radius:12px;max-width:800px;width:90%;max-height:90vh;overflow-y:auto;padding:20px;box-shadow:0 20px 25px -5px rgba(0,0,0,0.3)}
+  .modal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--line)}
+  .modal-close{cursor:pointer;font-size:24px;color:var(--muted);border:none;background:none;padding:0;width:32px;height:32px}
+  
+  @media(max-width:768px){
+    .grid{grid-template-columns:1fr}
+    .grid-3{grid-template-columns:1fr}
+    .grid-4{grid-template-columns:1fr 1fr}
+    .btn-row{flex-direction:column}
+    .btn-row button{width:100%}
+  }
+  
+  @media print{
+    .no-print{display:none !important}
+    .tbl{font-size:10px}
+    .tbl th,.tbl td{padding:4px 6px}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🧬 Bitácora de Bandas Oligoclonales v2.0</h1>
+  
+  <!-- Sección de estadísticas -->
+  <div class="stats">
+    <div class="stat-card">
+      <div class="stat-label">Corridas Totales</div>
+      <div class="stat-value" id="statTotal">0</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Muestras Procesadas</div>
+      <div class="stat-value" id="statSamples">0</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Última Corrida</div>
+      <div class="stat-value" id="statLast" style="font-size:16px">—</div>
+    </div>
+  </div>
+  
+  <!-- Formulario nueva corrida -->
+  <fieldset class="no-print">
+    <legend>📝 Nueva Corrida</legend>
+    <div class="grid">
+      <div>
+        <label for="runDate">Fecha de corrida *</label>
+        <input type="date" id="runDate" required>
+      </div>
+      <div>
+        <label for="runObs">Observaciones</label>
+        <textarea id="runObs" placeholder="Observaciones generales..."></textarea>
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="primary" onclick="addRun()">➕ Crear Corrida</button>
+      <button onclick="importJSON()">📥 Importar</button>
+      <button onclick="exportJSON()">📤 Exportar</button>
+      <button class="warn" onclick="clearAll()">🗑️ Borrar Todo</button>
+    </div>
+  </fieldset>
+  
+  <!-- Búsqueda -->
+  <div class="search-box no-print">
+    <input type="text" id="searchBox" placeholder="🔍 Buscar por nombre, cédula, ID o procedencia...">
+    <button onclick="searchRuns()">Buscar</button>
+    <button onclick="clearSearch()">Limpiar</button>
+  </div>
+  
+  <!-- Tabla de corridas -->
+  <h2>📋 Historial de Corridas</h2>
+  <div id="runsContainer"></div>
+  
+  <!-- Toast container -->
+  <div class="toast-container" id="toastContainer"></div>
+  
+  <!-- Modal para gestionar muestras -->
+  <div class="modal" id="samplesModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 style="margin:0">🧪 Gestionar Muestras</h2>
+        <button class="modal-close" onclick="closeSamplesModal()">×</button>
+      </div>
+      <div id="modalBody"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+// Estado global
+const db = {runs: []};
+let currentRunId = null;
+let searchTerm = '';
+
+// Inicialización
+function init() {
+  const saved = localStorage.getItem('boc_db');
+  if (saved) {
+    try {
+      const parsed = JSON.parse(saved);
+      db.runs = parsed.runs || [];
+    } catch (e) {
+      console.error('Error al cargar datos:', e);
+      showToast('Error al cargar datos guardados', 'error');
+    }
+  }
+  
+  // Establecer fecha actual
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('runDate').value = today;
+  
+  updateStats();
+  render();
+  
+  // Auto-guardado cada 30 segundos
+  setInterval(save, 30000);
+}
+
+// Guardar en localStorage
+function save() {
+  try {
+    localStorage.setItem('boc_db', JSON.stringify(db));
+  } catch (e) {
+    console.error('Error al guardar:', e);
+    showToast('Error al guardar datos', 'error');
+  }
+}
+
+// Generar ID único
+function uid() {
+  return Date.now().toString(36) + Math.random().toString(36).substr(2);
+}
+
+// Escapar HTML
+function esc(str) {
+  const div = document.createElement('div');
+  div.textContent = str || '';
+  return div.innerHTML;
+}
+
+// Formatear fecha
+function formatDate(dateStr) {
+  if (!dateStr) return '—';
+  const d = new Date(dateStr + 'T00:00:00');
+  return d.toLocaleDateString('es-CR', { year: 'numeric', month: '2-digit', day: '2-digit' });
+}
+
+// Toast notifications
+function showToast(message, type = 'info') {
+  const container = document.getElementById('toastContainer');
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  
+  const icon = {
+    success: '✓',
+    error: '✕',
+    warning: '⚠',
+    info: 'ℹ'
+  }[type] || 'ℹ';
+  
+  toast.innerHTML = `<span style="font-size:18px">${icon}</span><span>${esc(message)}</span>`;
+  container.appendChild(toast);
+  
+  setTimeout(() => {
+    toast.style.animation = 'slideIn 0.3s ease reverse';
+    setTimeout(() => toast.remove(), 300);
+  }, 3000);
+}
+
+// Actualizar estadísticas
+function updateStats() {
+  const totalRuns = db.runs.length;
+  const totalSamples = db.runs.reduce((sum, r) => sum + r.samples.length, 0);
+  const lastRun = db.runs.length > 0 
+    ? formatDate(db.runs[db.runs.length - 1].date)
+    : '—';
+  
+  document.getElementById('statTotal').textContent = totalRuns;
+  document.getElementById('statSamples').textContent = totalSamples;
+  document.getElementById('statLast').textContent = lastRun;
+}
+
+// Validar corrida
+function validateRun(date, obs) {
+  const errors = [];
+  
+  if (!date) {
+    errors.push('La fecha es obligatoria');
+  } else {
+    const d = new Date(date);
+    const now = new Date();
+    if (d > now) {
+      errors.push('La fecha no puede ser futura');
+    }
+  }
+  
+  if (obs && obs.length > 500) {
+    errors.push('Las observaciones no pueden exceder 500 caracteres');
+  }
+  
+  return errors;
+}
+
+// Agregar corrida
+function addRun() {
+  const date = document.getElementById('runDate').value.trim();
+  const obs = document.getElementById('runObs').value.trim();
+  
+  const errors = validateRun(date, obs);
+  if (errors.length > 0) {
+    showToast(errors.join('. '), 'error');
+    document.getElementById('runDate').classList.add('input-error');
+    return;
+  }
+  
+  document.getElementById('runDate').classList.remove('input-error');
+  
+  const newRun = {
+    id: uid(),
+    date: date,
+    obs: obs,
+    samples: [],
+    createdAt: new Date().toISOString()
+  };
+  
+  db.runs.push(newRun);
+  save();
+  updateStats();
+  render();
+  
+  // Limpiar formulario
+  document.getElementById('runObs').value = '';
+  
+  showToast('Corrida creada exitosamente', 'success');
+}
+
+// Eliminar corrida
+function deleteRun(id) {
+  const run = db.runs.find(r => r.id === id);
+  if (!run) return;
+  
+  const sampleCount = run.samples.length;
+  const msg = sampleCount > 0
+    ? `¿Eliminar corrida del ${formatDate(run.date)} con ${sampleCount} muestra(s)?`
+    : `¿Eliminar corrida del ${formatDate(run.date)}?`;
+  
+  if (!confirm(msg)) return;
+  
+  db.runs = db.runs.filter(r => r.id !== id);
+  save();
+  updateStats();
+  render();
+  showToast('Corrida eliminada', 'success');
+}
+
+// Abrir modal de muestras
+function manageSamples(id) {
+  currentRunId = id;
+  const run = db.runs.find(r => r.id === id);
+  if (!run) return;
+  
+  const modal = document.getElementById('samplesModal');
+  const body = document.getElementById('modalBody');
+  
+  body.innerHTML = `
+    <div style="margin-bottom:16px">
+      <strong>Corrida:</strong> ${formatDate(run.date)}<br>
+      <strong>Muestras actuales:</strong> ${run.samples.length}
+    </div>
+    
+    <fieldset>
+      <legend>➕ Agregar Muestra</legend>
+      <div class="grid grid-4">
+        <div>
+          <label>Par *</label>
+          <input type="number" id="newPair" min="1" placeholder="1" required>
+        </div>
+        <div>
+          <label>Nombre *</label>
+          <input type="text" id="newNombre" placeholder="Nombre completo" required>
+        </div>
+        <div>
+          <label>Cédula *</label>
+          <input type="text" id="newCedula" placeholder="1-2345-6789" required>
+        </div>
+        <div>
+          <label>ID Muestra *</label>
+          <input type="text" id="newID" placeholder="ID" required>
+        </div>
+      </div>
+      <div class="grid">
+        <div>
+          <label>Procedencia *</label>
+          <select id="newProc">
+            <option value="HCG">HCG</option>
+            <option value="Consulta Externa">Consulta Externa</option>
+            <option value="Emergencias">Emergencias</option>
+            <option value="Privado">Privado</option>
+            <option value="Otro">Otro</option>
+          </select>
+        </div>
+        <div>
+          <label>Interpretación</label>
+          <select id="newInterp">
+            <option value="T1">T1 - Negativo</option>
+            <option value="T2">T2 - Patrón en espejo</option>
+            <option value="T3">T3 - Patrón único en LCR</option>
+            <option value="T4">T4 - Bandas idénticas</option>
+            <option value="T5">T5 - Síntesis intratecal</option>
+          </select>
+        </div>
+      </div>
+      <div>
+        <label>Notas adicionales</label>
+        <textarea id="newNotas" placeholder="Observaciones..." style="min-height:60px"></textarea>
+      </div>
+      <button class="primary" onclick="addSample()" style="width:100%;margin-top:10px">
+        ➕ Agregar Muestra
+      </button>
+    </fieldset>
+    
+    <h3 style="margin:20px 0 10px">📋 Muestras Registradas (${run.samples.length})</h3>
+    <div style="overflow-x:auto">
+      ${run.samples.length === 0 
+        ? '<div class="empty-state"><p>No hay muestras registradas</p></div>'
+        : `
+        <table class="tbl">
+          <thead>
+            <tr>
+              <th>Par</th>
+              <th>Carril Suero</th>
+              <th>Carril LCR</th>
+              <th>Nombre</th>
+              <th>Cédula</th>
+              <th>ID</th>
+              <th>Procedencia</th>
+              <th>Interpretación</th>
+              <th>Notas</th>
+              <th class="no-print">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${run.samples.map(s => `
+              <tr>
+                <td style="text-align:center;font-weight:600">${s.pair}</td>
+                <td style="text-align:center">${s.laneSerum}</td>
+                <td style="text-align:center">${s.laneCSF}</td>
+                <td>${esc(s.nombre)}</td>
+                <td>${esc(s.cedula)}</td>
+                <td>${esc(s.ID)}</td>
+                <td>${esc(s.proc)}</td>
+                <td><strong>${esc(s.interp)}</strong></td>
+                <td style="font-size:11px">${esc(s.notas || '—')}</td>
+                <td class="no-print">
+                  <div class="tbl-actions">
+                    <button class="warn" onclick="deleteSample('${s.id}')">🗑️</button>
+                  </div>
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+        `
+      }
+    </div>
+    
+    <div class="btn-row" style="margin-top:16px">
+      <button onclick="printRunFromModal()">🖨️ Imprimir</button>
+      <button onclick="closeSamplesModal()">Cerrar</button>
+    </div>
+  `;
+  
+  modal.classList.add('active');
+}
+
+// Validar muestra
+function validateSample(pair, nombre, cedula, ID, proc) {
+  const errors = [];
+  
+  if (!pair || pair < 1) {
+    errors.push('El número de par debe ser mayor a 0');
+  }
+  
+  if (!nombre || nombre.trim().length < 3) {
+    errors.push('El nombre debe tener al menos 3 caracteres');
+  }
+  
+  if (!cedula || cedula.trim().length < 5) {
+    errors.push('La cédula debe tener al menos 5 caracteres');
+  }
+  
+  if (!ID || ID.trim().length < 1) {
+    errors.push('El ID de muestra es obligatorio');
+  }
+  
+  if (!proc) {
+    errors.push('La procedencia es obligatoria');
+  }
+  
+  // Verificar duplicados
+  const run = db.runs.find(r => r.id === currentRunId);
+  if (run) {
+    const duplicate = run.samples.find(s => 
+      s.pair === pair || 
+      s.cedula.toLowerCase() === cedula.toLowerCase().trim() ||
+      s.ID.toLowerCase() === ID.toLowerCase().trim()
+    );
+    
+    if (duplicate) {
+      errors.push('Ya existe una muestra con ese par, cédula o ID en esta corrida');
+    }
+  }
+  
+  return errors;
+}
+
+// Agregar muestra
+function addSample() {
+  const pair = parseInt(document.getElementById('newPair').value);
+  const nombre = document.getElementById('newNombre').value.trim();
+  const cedula = document.getElementById('newCedula').value.trim();
+  const ID = document.getElementById('newID').value.trim();
+  const proc = document.getElementById('newProc').value;
+  const interp = document.getElementById('newInterp').value;
+  const notas = document.getElementById('newNotas').value.trim();
+  
+  const errors = validateSample(pair, nombre, cedula, ID, proc);
+  if (errors.length > 0) {
+    showToast(errors.join('. '), 'error');
+    return;
+  }
+  
+  const run = db.runs.find(r => r.id === currentRunId);
+  if (!run) return;
+  
+  const newSample = {
+    id: uid(),
+    pair: pair,
+    laneSerum: pair,
+    laneCSF: pair + "′",
+    nombre: nombre,
+    cedula: cedula,
+    ID: ID,
+    proc: proc,
+    interp: interp,
+    notas: notas
+  };
+  
+  run.samples.push(newSample);
+  
+  // Ordenar por par
+  run.samples.sort((a, b) => a.pair - b.pair);
+  
+  save();
+  updateStats();
+  
+  // Limpiar formulario
+  document.getElementById('newPair').value = '';
+  document.getElementById('newNombre').value = '';
+  document.getElementById('newCedula').value = '';
+  document.getElementById('newID').value = '';
+  document.getElementById('newNotas').value = '';
+  
+  // Reabrir modal actualizado
+  manageSamples(currentRunId);
+  showToast('Muestra agregada exitosamente', 'success');
+}
+
+// Eliminar muestra
+function deleteSample(sampleId) {
+  if (!confirm('¿Eliminar esta muestra?')) return;
+  
+  const run = db.runs.find(r => r.id === currentRunId);
+  if (!run) return;
+  
+  run.samples = run.samples.filter(s => s.id !== sampleId);
+  save();
+  updateStats();
+  manageSamples(currentRunId);
+  showToast('Muestra eliminada', 'success');
+}
+
+// Cerrar modal
+function closeSamplesModal() {
+  document.getElementById('samplesModal').classList.remove('active');
+  currentRunId = null;
+  render();
+}
+
+// Imprimir desde modal
+function printRunFromModal() {
+  if (currentRunId) {
+    printRun(currentRunId);
+  }
+}
+
+// Imprimir corrida
+function printRun(id) {
+  const run = db.runs.find(r => r.id === id);
+  if (!run) return;
+  
+  const w = window.open('', '_blank', 'width=900,height=800');
+  
+  const css = `
+    <style>
+      @page{size:A4;margin:15mm}
+      body{font:12px system-ui,sans-serif;color:#111;margin:0;padding:20px}
+      h1{font-size:16px;margin:0 0 8px;border-bottom:2px solid #333;padding-bottom:6px}
+      .meta{margin:12px 0;background:#f5f5f5;padding:10px;border-radius:6px}
+      .meta div{margin:4px 0}
+      table{border-collapse:collapse;width:100%;margin-top:12px;font-size:10px}
+      th,td{border:1px solid #ddd;padding:6px 8px;text-align:left}
+      th{background:#f3f4f6;font-weight:600}
+      .gel-space{height:380px;border:2px dashed #999;margin-top:16px;text-align:center;
+        line-height:380px;color:#666;font-size:14px;background:#fafafa}
+      .footer{margin-top:20px;font-size:10px;color:#666;border-top:1px solid #ddd;padding-top:10px}
+    </style>
+  `;
+  
+  const body = `
+    <h1>🧬 Bitácora de Bandas Oligoclonales</h1>
+    <div class="meta">
+      <div><strong>Fecha de corrida:</strong> ${formatDate(run.date)}</div>
+      <div><strong>Observaciones:</strong> ${esc(run.obs || 'Ninguna')}</div>
+      <div><strong>Total de muestras:</strong> ${run.samples.length}</div>
+    </div>
+    
+    ${run.samples.length === 0 
+      ? '<p style="text-align:center;color:#999;padding:40px">No hay muestras registradas</p>'
+      : `
+      <table>
+        <thead>
+          <tr>
+            <th>Par</th>
+            <th>Carril Suero</th>
+            <th>Carril LCR</th>
+            <th>Nombre</th>
+            <th>Cédula</th>
+            <th>ID</th>
+            <th>Procedencia</th>
+            <th>Interpretación</th>
+            <th>Notas</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${run.samples.map(s => `
+            <tr>
+              <td style="text-align:center;font-weight:600">${s.pair}</td>
+              <td style="text-align:center">${s.laneSerum}</td>
+              <td style="text-align:center">${s.laneCSF}</td>
+              <td>${esc(s.nombre)}</td>
+              <td>${esc(s.cedula)}</td>
+              <td>${esc(s.ID)}</td>
+              <td>${esc(s.proc)}</td>
+              <td><strong>${esc(s.interp)}</strong></td>
+              <td style="font-size:9px">${esc(s.notas || '—')}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+      `
+    }
+    
+    <div class="gel-space">
+      📸 Espacio para pegar imagen del gel
+    </div>
+    
+    <div class="footer">
+      <div>Generado: ${new Date().toLocaleString('es-CR')}</div>
+      <div>Sistema de Bitácora de Bandas Oligoclonales - Hematología</div>
+      <div>Autor: Luis Alejandro Zúñiga Anchia</div>
+    </div>
+  `;
+  
+  w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8">${css}</head><body>${body}</body></html>`);
+  w.document.close();
+  
+  setTimeout(() => w.print(), 250);
+}
+
+// Buscar corridas
+function searchRuns() {
+  searchTerm = document.getElementById('searchBox').value.trim().toLowerCase();
+  render();
+}
+
+// Limpiar búsqueda
+function clearSearch() {
+  searchTerm = '';
+  document.getElementById('searchBox').value = '';
+  render();
+}
+
+// Renderizar tabla de corridas
+function render() {
+  let runs = db.runs;
+  
+  // Aplicar filtro de búsqueda
+  if (searchTerm) {
+    runs = runs.filter(run => {
+      const dateMatch = formatDate(run.date).toLowerCase().includes(searchTerm);
+      const obsMatch = run.obs.toLowerCase().includes(searchTerm);
+      const samplesMatch = run.samples.some(s => 
+        s.nombre.toLowerCase().includes(searchTerm) ||
+        s.cedula.toLowerCase().includes(searchTerm) ||
+        s.ID.toLowerCase().includes(searchTerm) ||
+        s.proc.toLowerCase().includes(searchTerm)
+      );
+      return dateMatch || obsMatch || samplesMatch;
+    });
+  }
+  
+  const container = document.getElementById('runsContainer');
+  
+  if (runs.length === 0) {
+    container.innerHTML = `
+      <div class="empty-state">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+        </svg>
+        <p>${searchTerm ? 'No se encontraron corridas' : 'No hay corridas registradas'}</p>
+        ${searchTerm ? '<button onclick="clearSearch()">Limpiar búsqueda</button>' : ''}
+      </div>
+    `;
+    return;
+  }
+  
+  // Ordenar por fecha descendente
+  runs.sort((a, b) => new Date(b.date) - new Date(a.date));
+  
+  container.innerHTML = `
+    <table class="tbl">
+      <thead>
+        <tr>
+          <th style="width:120px">Fecha</th>
+          <th>Observaciones</th>
+          <th style="width:100px;text-align:center">Muestras</th>
+          <th style="width:200px;text-align:center" class="no-print">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${runs.map(run => `
+          <tr>
+            <td style="font-weight:600">${formatDate(run.date)}</td>
+            <td>${esc(run.obs || '—')}</td>
+            <td style="text-align:center">
+              <span style="background:${run.samples.length > 0 ? 'var(--success)' : 'var(--muted)'};
+                color:#fff;padding:4px 8px;border-radius:6px;font-weight:600">
+                ${run.samples.length}
+              </span>
+            </td>
+            <td class="no-print">
+              <div class="tbl-actions">
+                <button class="primary" onclick="manageSamples('${run.id}')">📝 Muestras</button>
+                <button onclick="printRun('${run.id}')">🖨️</button>
+                <button class="warn" onclick="deleteRun('${run.id}')">🗑️</button>
+              </div>
+            </td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>
+  `;
+}
+
+// Exportar JSON
+function exportJSON() {
+  const dataStr = JSON.stringify(db, null, 2);
+  const dataBlob = new Blob([dataStr], {type: 'application/json'});
+  const url = URL.createObjectURL(dataBlob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `bandas_oligoclonales_${new Date().toISOString().split('T')[0]}.json`;
+  link.click();
+  URL.revokeObjectURL(url);
+  showToast('Datos exportados exitosamente', 'success');
+}
+
+// Importar JSON
+function importJSON() {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = '.json';
+  input.onchange = e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = event => {
+      try {
+        const imported = JSON.parse(event.target.result);
+        if (imported.runs && Array.isArray(imported.runs)) {
+          if (confirm(`¿Importar ${imported.runs.length} corrida(s)? Esto NO sobrescribirá tus datos actuales.`)) {
+            db.runs.push(...imported.runs);
+            save();
+            updateStats();
+            render();
+            showToast('Datos importados exitosamente', 'success');
+          }
+        } else {
+          showToast('Formato de archivo inválido', 'error');
+        }
+      } catch (err) {
+        console.error('Error al importar:', err);
+        showToast('Error al importar archivo', 'error');
+      }
+    };
+    reader.readAsText(file);
+  };
+  input.click();
+}
+
+// Borrar todo
+function clearAll() {
+  const confirm1 = prompt('⚠️ ADVERTENCIA: Se eliminarán TODOS los datos.\nEscribe "BORRAR TODO" para confirmar:');
+  if (confirm1 !== 'BORRAR TODO') {
+    showToast('Operación cancelada', 'info');
+    return;
+  }
+  
+  const confirm2 = prompt('¿Estás COMPLETAMENTE seguro? Escribe "SÍ BORRAR" para confirmar:');
+  if (confirm2 !== 'SÍ BORRAR') {
+    showToast('Operación cancelada', 'info');
+    return;
+  }
+  
+  db.runs = [];
+  save();
+  updateStats();
+  render();
+  showToast('Todos los datos han sido eliminados', 'warning');
+}
+
+// Inicializar al cargar
+window.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
