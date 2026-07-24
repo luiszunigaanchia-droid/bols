@@ -169,7 +169,7 @@ let searchTerm = '';
 // Integración con menú de Electron
 function resetForm() {
   document.getElementById('runObs').value = '';
-  const today = new Date().toISOString().split('T')[0];
+  const today = getLocalDateString();
   document.getElementById('runDate').value = today;
   document.getElementById('runDate').classList.remove('input-error');
   document.getElementById('runDate').focus();
@@ -198,7 +198,7 @@ function init() {
   }
   
   // Establecer fecha actual
-  const today = new Date().toISOString().split('T')[0];
+  const today = getLocalDateString();
   document.getElementById('runDate').value = today;
   
   updateStats();
@@ -230,10 +230,20 @@ function esc(str) {
   return div.innerHTML;
 }
 
+// Obtener fecha local en formato YYYY-MM-DD
+function getLocalDateString(d = new Date()) {
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
 // Formatear fecha
 function formatDate(dateStr) {
   if (!dateStr) return '—';
+  if (/^\d{2}\/\d{2}\/\d{4}$/.test(dateStr)) return dateStr;
   const d = new Date(dateStr + 'T00:00:00');
+  if (isNaN(d.getTime())) return '—';
   return d.toLocaleDateString('es-CR', { year: 'numeric', month: '2-digit', day: '2-digit' });
 }
 
@@ -280,9 +290,8 @@ function validateRun(date, obs) {
   if (!date) {
     errors.push('La fecha es obligatoria');
   } else {
-    const d = new Date(date);
-    const now = new Date();
-    if (d > now) {
+    const todayStr = getLocalDateString();
+    if (date > todayStr) {
       errors.push('La fecha no puede ser futura');
     }
   }
@@ -443,8 +452,8 @@ function manageSamples(id) {
             ${run.samples.map(s => `
               <tr>
                 <td style="text-align:center;font-weight:600">${s.pair}</td>
-                <td style="text-align:center">${s.laneSerum}</td>
-                <td style="text-align:center">${s.laneCSF}</td>
+                <td style="text-align:center">${s.laneSerum !== undefined ? s.laneSerum : s.pair}</td>
+                <td style="text-align:center">${s.laneCSF !== undefined ? s.laneCSF : s.pair + "′"}</td>
                 <td>${esc(s.nombre)}</td>
                 <td>${esc(s.cedula)}</td>
                 <td>${esc(s.ID)}</td>
@@ -477,24 +486,41 @@ function manageSamples(id) {
 function validateSample(pair, nombre, cedula, ID, proc) {
   const errors = [];
   
+  const pairEl = document.getElementById('newPair');
+  const nombreEl = document.getElementById('newNombre');
+  const cedulaEl = document.getElementById('newCedula');
+  const IDEl = document.getElementById('newID');
+  const procEl = document.getElementById('newProc');
+
+  if (pairEl) pairEl.classList.remove('input-error');
+  if (nombreEl) nombreEl.classList.remove('input-error');
+  if (cedulaEl) cedulaEl.classList.remove('input-error');
+  if (IDEl) IDEl.classList.remove('input-error');
+  if (procEl) procEl.classList.remove('input-error');
+
   if (!pair || pair < 1) {
     errors.push('El número de par debe ser mayor a 0');
+    if (pairEl) pairEl.classList.add('input-error');
   }
   
   if (!nombre || nombre.trim().length < 3) {
     errors.push('El nombre debe tener al menos 3 caracteres');
+    if (nombreEl) nombreEl.classList.add('input-error');
   }
   
   if (!cedula || cedula.trim().length < 5) {
     errors.push('La cédula debe tener al menos 5 caracteres');
+    if (cedulaEl) cedulaEl.classList.add('input-error');
   }
   
   if (!ID || ID.trim().length < 1) {
     errors.push('El ID de muestra es obligatorio');
+    if (IDEl) IDEl.classList.add('input-error');
   }
   
   if (!proc) {
     errors.push('La procedencia es obligatoria');
+    if (procEl) procEl.classList.add('input-error');
   }
   
   // Verificar duplicados con mayor detalle en los errores
@@ -503,14 +529,17 @@ function validateSample(pair, nombre, cedula, ID, proc) {
     const dupPair = run.samples.find(s => s.pair === pair);
     if (dupPair) {
       errors.push(`Ya existe una muestra registrada con el número de par "${pair}"`);
+      if (pairEl) pairEl.classList.add('input-error');
     }
     const dupCedula = run.samples.find(s => s.cedula.toLowerCase() === cedula.toLowerCase().trim());
     if (dupCedula) {
       errors.push(`Ya existe una muestra registrada con la cédula "${cedula}"`);
+      if (cedulaEl) cedulaEl.classList.add('input-error');
     }
     const dupID = run.samples.find(s => s.ID.toLowerCase() === ID.toLowerCase().trim());
     if (dupID) {
       errors.push(`Ya existe una muestra registrada con el ID "${ID}"`);
+      if (IDEl) IDEl.classList.add('input-error');
     }
   }
   
@@ -626,6 +655,11 @@ function printRun(id) {
   `;
   
   const body = `
+    <div class="no-print-area" style="background:#f3f4f6;padding:12px;border-bottom:1px solid #ddd;margin-bottom:20px;display:flex;gap:10px;align-items:center;font-family:system-ui,sans-serif">
+      <button onclick="window.print()" style="padding:6px 14px;background:#2563eb;color:#fff;border:none;border-radius:6px;cursor:pointer;font-weight:600;font-size:13px">🖨️ Imprimir Reporte</button>
+      <button onclick="window.close()" style="padding:6px 14px;background:#ef4444;color:#fff;border:none;border-radius:6px;cursor:pointer;font-weight:600;font-size:13px">❌ Cerrar Reporte</button>
+      <span style="font-size:11px;color:#666;margin-left:10px">Cargue la imagen del gel abajo si lo desea y luego presione "Imprimir Reporte"</span>
+    </div>
     <h1>🧬 Bitácora de Bandas Oligoclonales</h1>
     <div class="meta">
       <div><strong>Fecha de corrida:</strong> ${formatDate(run.date)}</div>
@@ -654,8 +688,8 @@ function printRun(id) {
           ${(run.samples || []).map(s => `
             <tr>
               <td style="text-align:center;font-weight:600">${s.pair}</td>
-              <td style="text-align:center">${s.laneSerum}</td>
-              <td style="text-align:center">${s.laneCSF}</td>
+              <td style="text-align:center">${s.laneSerum !== undefined ? s.laneSerum : s.pair}</td>
+              <td style="text-align:center">${s.laneCSF !== undefined ? s.laneCSF : s.pair + "′"}</td>
               <td>${esc(s.nombre)}</td>
               <td>${esc(s.cedula)}</td>
               <td>${esc(s.ID)}</td>
@@ -686,7 +720,7 @@ function printRun(id) {
       <div>Autor: Luis Alejandro Zúñiga Anchia</div>
     </div>
 
-    <script>
+    \<script>
       document.getElementById('gelFileInput').addEventListener('change', function(e) {
         const file = e.target.files[0];
         if (file) {
@@ -700,7 +734,7 @@ function printRun(id) {
           reader.readAsDataURL(file);
         }
       });
-    </script>
+    <\/script>
   `;
   
   w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8">${css}</head><body>${body}</body></html>`);
@@ -722,7 +756,7 @@ function clearSearch() {
 
 // Renderizar tabla de corridas con salvaguarda para propiedades opcionales/nulas
 function render() {
-  let runs = db.runs || [];
+  let runs = [...(db.runs || [])];
   
   // Aplicar filtro de búsqueda
   if (searchTerm) {
@@ -755,8 +789,14 @@ function render() {
     return;
   }
   
-  // Ordenar por fecha descendente
-  runs.sort((a, b) => new Date(b.date) - new Date(a.date));
+  // Ordenar por fecha descendente de forma segura sin retornar NaN
+  runs.sort((a, b) => {
+    const dateA = a.date ? new Date(a.date + 'T00:00:00') : null;
+    const dateB = b.date ? new Date(b.date + 'T00:00:00') : null;
+    const timeA = dateA && !isNaN(dateA.getTime()) ? dateA.getTime() : 0;
+    const timeB = dateB && !isNaN(dateB.getTime()) ? dateB.getTime() : 0;
+    return timeB - timeA;
+  });
   
   container.innerHTML = `
     <table class="tbl">
@@ -800,7 +840,7 @@ function exportJSON() {
   const url = URL.createObjectURL(dataBlob);
   const link = document.createElement('a');
   link.href = url;
-  link.download = `bandas_oligoclonales_${new Date().toISOString().split('T')[0]}.json`;
+  link.download = `bandas_oligoclonales_${getLocalDateString()}.json`;
   link.click();
   URL.revokeObjectURL(url);
   showToast('Datos exportados exitosamente', 'success');
