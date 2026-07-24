@@ -23,7 +23,7 @@ function createWindow() {
     show: false
   });
 
-  mainWindow.loadFile('app.html');
+  mainWindow.loadFile('index.html');
 
   const template = [
     {
