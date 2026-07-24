@@ -33,7 +33,9 @@ function createWindow() {
           label: 'Nuevo Registro',
           accelerator: 'CmdOrCtrl+N',
           click: () => {
-            mainWindow.webContents.executeJavaScript('resetForm()');
+            if (mainWindow && !mainWindow.isDestroyed() && mainWindow.webContents) {
+              mainWindow.webContents.executeJavaScript('resetForm()');
+            }
           }
         },
         { type: 'separator' },
@@ -41,14 +43,18 @@ function createWindow() {
           label: 'Exportar Datos',
           accelerator: 'CmdOrCtrl+E',
           click: () => {
-            mainWindow.webContents.executeJavaScript('exportData()');
+            if (mainWindow && !mainWindow.isDestroyed() && mainWindow.webContents) {
+              mainWindow.webContents.executeJavaScript('exportData()');
+            }
           }
         },
         {
           label: 'Importar Datos',
           accelerator: 'CmdOrCtrl+I',
           click: () => {
-            mainWindow.webContents.executeJavaScript('importData()');
+            if (mainWindow && !mainWindow.isDestroyed() && mainWindow.webContents) {
+              mainWindow.webContents.executeJavaScript('importData()');
+            }
           }
         },
         { type: 'separator' },

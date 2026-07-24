@@ -133,11 +133,11 @@
   </fieldset>
   
   <!-- Búsqueda -->
-  <div class="search-box no-print">
+  <form onsubmit="event.preventDefault(); searchRuns();" class="search-box no-print">
     <input type="text" id="searchBox" placeholder="🔍 Buscar por nombre, cédula, ID o procedencia...">
-    <button onclick="searchRuns()">Buscar</button>
-    <button onclick="clearSearch()">Limpiar</button>
-  </div>
+    <button type="submit">Buscar</button>
+    <button type="button" onclick="clearSearch()">Limpiar</button>
+  </form>
   
   <!-- Tabla de corridas -->
   <h2>📋 Historial de Corridas</h2>
@@ -190,7 +190,7 @@ function init() {
   if (saved) {
     try {
       const parsed = JSON.parse(saved);
-      db.runs = parsed.runs || [];
+      db.runs = (parsed && Array.isArray(parsed.runs)) ? parsed.runs : [];
     } catch (e) {
       console.error('Error al cargar datos:', e);
       showToast('Error al cargar datos guardados', 'error');
@@ -234,6 +234,7 @@ function esc(str) {
 function formatDate(dateStr) {
   if (!dateStr) return '—';
   const d = new Date(dateStr + 'T00:00:00');
+  if (isNaN(d.getTime())) return '—';
   return d.toLocaleDateString('es-CR', { year: 'numeric', month: '2-digit', day: '2-digit' });
 }
 
@@ -280,10 +281,16 @@ function validateRun(date, obs) {
   if (!date) {
     errors.push('La fecha es obligatoria');
   } else {
-    const d = new Date(date);
-    const now = new Date();
-    if (d > now) {
-      errors.push('La fecha no puede ser futura');
+    const d = new Date(date + 'T00:00:00');
+    if (isNaN(d.getTime())) {
+      errors.push('La fecha proporcionada es inválida');
+    } else {
+      const now = new Date();
+      // Remover componente de hora para comparar solo fechas completas
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      if (d > today) {
+        errors.push('La fecha no puede ser futura');
+      }
     }
   }
   
@@ -477,8 +484,8 @@ function manageSamples(id) {
 function validateSample(pair, nombre, cedula, ID, proc) {
   const errors = [];
   
-  if (!pair || pair < 1) {
-    errors.push('El número de par debe ser mayor a 0');
+  if (typeof pair !== 'number' || isNaN(pair) || pair < 1) {
+    errors.push('El número de par debe ser un entero válido mayor a 0');
   }
   
   if (!nombre || nombre.trim().length < 3) {
@@ -603,6 +610,10 @@ function printRun(id) {
   if (!run) return;
   
   const w = window.open('', '_blank', 'width=900,height=800');
+  if (!w) {
+    showToast('La ventana de impresión fue bloqueada. Por favor, permita las ventanas emergentes.', 'warning');
+    return;
+  }
   
   const css = `
     <style>
@@ -806,7 +817,7 @@ function exportJSON() {
   showToast('Datos exportados exitosamente', 'success');
 }
 
-// Importar JSON con regeneración de ID para evitar colisiones
+// Importar JSON con regeneración de ID para evitar colisiones y validación robusta
 function importJSON() {
   const input = document.createElement('input');
   input.type = 'file';
@@ -819,25 +830,48 @@ function importJSON() {
     reader.onload = event => {
       try {
         const imported = JSON.parse(event.target.result);
-        if (imported.runs && Array.isArray(imported.runs)) {
+        if (imported && imported.runs && Array.isArray(imported.runs)) {
           if (confirm(`¿Importar ${imported.runs.length} corrida(s)? Esto NO sobrescribirá tus datos actuales.`)) {
-            const processedRuns = imported.runs.map(run => {
-              // Regenerar ID de la corrida para evitar colisiones
-              const newRunId = uid();
-              const processedSamples = (run.samples || []).map(sample => {
-                // Regenerar ID de la muestra para evitar colisiones
-                return {
-                  ...sample,
-                  id: uid()
-                };
-              });
+            const processedRuns = [];
 
-              return {
-                ...run,
+            for (const run of imported.runs) {
+              if (!run || typeof run !== 'object') continue;
+
+              // Sanitizar e imponer valores predeterminados seguros para cada corrida
+              const newRunId = uid();
+              const runDate = typeof run.date === 'string' ? run.date.trim() : new Date().toISOString().split('T')[0];
+              const runObs = typeof run.obs === 'string' ? run.obs.trim() : '';
+              const runCreatedAt = typeof run.createdAt === 'string' ? run.createdAt : new Date().toISOString();
+
+              const processedSamples = [];
+              if (run.samples && Array.isArray(run.samples)) {
+                for (const sample of run.samples) {
+                  if (!sample || typeof sample !== 'object') continue;
+
+                  // Sanitizar muestra importada
+                  processedSamples.push({
+                    id: uid(),
+                    pair: typeof sample.pair === 'number' && !isNaN(sample.pair) ? sample.pair : 1,
+                    laneSerum: typeof sample.laneSerum !== 'undefined' ? sample.laneSerum : (sample.pair || 1),
+                    laneCSF: typeof sample.laneCSF !== 'undefined' ? sample.laneCSF : (sample.pair ? sample.pair + "′" : "1′"),
+                    nombre: typeof sample.nombre === 'string' ? sample.nombre.trim() : 'Muestra Importada',
+                    cedula: typeof sample.cedula === 'string' ? sample.cedula.trim() : '—',
+                    ID: typeof sample.ID === 'string' ? sample.ID.trim() : uid(),
+                    proc: typeof sample.proc === 'string' ? sample.proc : 'HCG',
+                    interp: typeof sample.interp === 'string' ? sample.interp : 'T1',
+                    notas: typeof sample.notas === 'string' ? sample.notas.trim() : ''
+                  });
+                }
+              }
+
+              processedRuns.push({
                 id: newRunId,
-                samples: processedSamples
-              };
-            });
+                date: runDate,
+                obs: runObs,
+                samples: processedSamples,
+                createdAt: runCreatedAt
+              });
+            }
 
             db.runs.push(...processedRuns);
             save();
