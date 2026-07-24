@@ -166,6 +166,24 @@ const db = {runs: []};
 let currentRunId = null;
 let searchTerm = '';
 
+// Integración con menú de Electron
+function resetForm() {
+  document.getElementById('runObs').value = '';
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('runDate').value = today;
+  document.getElementById('runDate').classList.remove('input-error');
+  document.getElementById('runDate').focus();
+  showToast('Formulario restablecido', 'info');
+}
+
+function exportData() {
+  exportJSON();
+}
+
+function importData() {
+  importJSON();
+}
+
 // Inicialización
 function init() {
   const saved = localStorage.getItem('boc_db');
@@ -241,12 +259,13 @@ function showToast(message, type = 'info') {
   }, 3000);
 }
 
-// Actualizar estadísticas
+// Actualizar estadísticas con salvaguarda para campos inexistentes
 function updateStats() {
-  const totalRuns = db.runs.length;
-  const totalSamples = db.runs.reduce((sum, r) => sum + r.samples.length, 0);
-  const lastRun = db.runs.length > 0 
-    ? formatDate(db.runs[db.runs.length - 1].date)
+  const runs = db.runs || [];
+  const totalRuns = runs.length;
+  const totalSamples = runs.reduce((sum, r) => sum + ((r.samples || []).length), 0);
+  const lastRun = runs.length > 0
+    ? formatDate(runs[runs.length - 1].date)
     : '—';
   
   document.getElementById('statTotal').textContent = totalRuns;
@@ -336,64 +355,71 @@ function manageSamples(id) {
   const modal = document.getElementById('samplesModal');
   const body = document.getElementById('modalBody');
   
+  // Calcular siguiente número de par lógico
+  const nextPair = run.samples && run.samples.length > 0
+    ? Math.max(...run.samples.map(s => s.pair || 0)) + 1
+    : 1;
+
   body.innerHTML = `
     <div style="margin-bottom:16px">
       <strong>Corrida:</strong> ${formatDate(run.date)}<br>
-      <strong>Muestras actuales:</strong> ${run.samples.length}
+      <strong>Muestras actuales:</strong> ${(run.samples || []).length}
     </div>
     
-    <fieldset>
-      <legend>➕ Agregar Muestra</legend>
-      <div class="grid grid-4">
-        <div>
-          <label>Par *</label>
-          <input type="number" id="newPair" min="1" placeholder="1" required>
+    <form onsubmit="event.preventDefault(); addSample();">
+      <fieldset>
+        <legend>➕ Agregar Muestra</legend>
+        <div class="grid grid-4">
+          <div>
+            <label>Par *</label>
+            <input type="number" id="newPair" min="1" value="${nextPair}" required>
+          </div>
+          <div>
+            <label>Nombre *</label>
+            <input type="text" id="newNombre" placeholder="Nombre completo" required>
+          </div>
+          <div>
+            <label>Cédula *</label>
+            <input type="text" id="newCedula" placeholder="1-2345-6789" required>
+          </div>
+          <div>
+            <label>ID Muestra *</label>
+            <input type="text" id="newID" placeholder="ID" required>
+          </div>
+        </div>
+        <div class="grid">
+          <div>
+            <label>Procedencia *</label>
+            <select id="newProc">
+              <option value="HCG">HCG</option>
+              <option value="Consulta Externa">Consulta Externa</option>
+              <option value="Emergencias">Emergencias</option>
+              <option value="Privado">Privado</option>
+              <option value="Otro">Otro</option>
+            </select>
+          </div>
+          <div>
+            <label>Interpretación</label>
+            <select id="newInterp">
+              <option value="T1">T1 - Negativo</option>
+              <option value="T2">T2 - Patrón en espejo</option>
+              <option value="T3">T3 - Patrón único en LCR</option>
+              <option value="T4">T4 - Bandas idénticas</option>
+              <option value="T5">T5 - Síntesis intratecal</option>
+            </select>
+          </div>
         </div>
         <div>
-          <label>Nombre *</label>
-          <input type="text" id="newNombre" placeholder="Nombre completo" required>
+          <label>Notas adicionales</label>
+          <textarea id="newNotas" placeholder="Observaciones..." style="min-height:60px"></textarea>
         </div>
-        <div>
-          <label>Cédula *</label>
-          <input type="text" id="newCedula" placeholder="1-2345-6789" required>
-        </div>
-        <div>
-          <label>ID Muestra *</label>
-          <input type="text" id="newID" placeholder="ID" required>
-        </div>
-      </div>
-      <div class="grid">
-        <div>
-          <label>Procedencia *</label>
-          <select id="newProc">
-            <option value="HCG">HCG</option>
-            <option value="Consulta Externa">Consulta Externa</option>
-            <option value="Emergencias">Emergencias</option>
-            <option value="Privado">Privado</option>
-            <option value="Otro">Otro</option>
-          </select>
-        </div>
-        <div>
-          <label>Interpretación</label>
-          <select id="newInterp">
-            <option value="T1">T1 - Negativo</option>
-            <option value="T2">T2 - Patrón en espejo</option>
-            <option value="T3">T3 - Patrón único en LCR</option>
-            <option value="T4">T4 - Bandas idénticas</option>
-            <option value="T5">T5 - Síntesis intratecal</option>
-          </select>
-        </div>
-      </div>
-      <div>
-        <label>Notas adicionales</label>
-        <textarea id="newNotas" placeholder="Observaciones..." style="min-height:60px"></textarea>
-      </div>
-      <button class="primary" onclick="addSample()" style="width:100%;margin-top:10px">
-        ➕ Agregar Muestra
-      </button>
-    </fieldset>
+        <button type="submit" class="primary" style="width:100%;margin-top:10px">
+          ➕ Agregar Muestra
+        </button>
+      </fieldset>
+    </form>
     
-    <h3 style="margin:20px 0 10px">📋 Muestras Registradas (${run.samples.length})</h3>
+    <h3 style="margin:20px 0 10px">📋 Muestras Registradas (${(run.samples || []).length})</h3>
     <div style="overflow-x:auto">
       ${run.samples.length === 0 
         ? '<div class="empty-state"><p>No hay muestras registradas</p></div>'
@@ -471,17 +497,20 @@ function validateSample(pair, nombre, cedula, ID, proc) {
     errors.push('La procedencia es obligatoria');
   }
   
-  // Verificar duplicados
+  // Verificar duplicados con mayor detalle en los errores
   const run = db.runs.find(r => r.id === currentRunId);
-  if (run) {
-    const duplicate = run.samples.find(s => 
-      s.pair === pair || 
-      s.cedula.toLowerCase() === cedula.toLowerCase().trim() ||
-      s.ID.toLowerCase() === ID.toLowerCase().trim()
-    );
-    
-    if (duplicate) {
-      errors.push('Ya existe una muestra con ese par, cédula o ID en esta corrida');
+  if (run && run.samples) {
+    const dupPair = run.samples.find(s => s.pair === pair);
+    if (dupPair) {
+      errors.push(`Ya existe una muestra registrada con el número de par "${pair}"`);
+    }
+    const dupCedula = run.samples.find(s => s.cedula.toLowerCase() === cedula.toLowerCase().trim());
+    if (dupCedula) {
+      errors.push(`Ya existe una muestra registrada con la cédula "${cedula}"`);
+    }
+    const dupID = run.samples.find(s => s.ID.toLowerCase() === ID.toLowerCase().trim());
+    if (dupID) {
+      errors.push(`Ya existe una muestra registrada con el ID "${ID}"`);
     }
   }
   
@@ -585,9 +614,14 @@ function printRun(id) {
       table{border-collapse:collapse;width:100%;margin-top:12px;font-size:10px}
       th,td{border:1px solid #ddd;padding:6px 8px;text-align:left}
       th{background:#f3f4f6;font-weight:600}
-      .gel-space{height:380px;border:2px dashed #999;margin-top:16px;text-align:center;
-        line-height:380px;color:#666;font-size:14px;background:#fafafa}
+      .gel-space{border:2px dashed #999;margin-top:16px;text-align:center;
+        padding:20px;color:#666;font-size:14px;background:#fafafa;position:relative}
+      .gel-preview-img{max-width:100%;max-height:350px;margin-top:10px;display:none;border:1px solid #ccc;object-fit:contain}
       .footer{margin-top:20px;font-size:10px;color:#666;border-top:1px solid #ddd;padding-top:10px}
+      @media print{
+        .no-print-area{display:none !important}
+        .gel-space{border:none;background:transparent;padding:0}
+      }
     </style>
   `;
   
@@ -596,10 +630,10 @@ function printRun(id) {
     <div class="meta">
       <div><strong>Fecha de corrida:</strong> ${formatDate(run.date)}</div>
       <div><strong>Observaciones:</strong> ${esc(run.obs || 'Ninguna')}</div>
-      <div><strong>Total de muestras:</strong> ${run.samples.length}</div>
+      <div><strong>Total de muestras:</strong> ${(run.samples || []).length}</div>
     </div>
     
-    ${run.samples.length === 0 
+    ${(run.samples || []).length === 0
       ? '<p style="text-align:center;color:#999;padding:40px">No hay muestras registradas</p>'
       : `
       <table>
@@ -617,7 +651,7 @@ function printRun(id) {
           </tr>
         </thead>
         <tbody>
-          ${run.samples.map(s => `
+          ${(run.samples || []).map(s => `
             <tr>
               <td style="text-align:center;font-weight:600">${s.pair}</td>
               <td style="text-align:center">${s.laneSerum}</td>
@@ -636,7 +670,14 @@ function printRun(id) {
     }
     
     <div class="gel-space">
-      📸 Espacio para pegar imagen del gel
+      <div class="no-print-area" style="margin-bottom:10px">
+        <label style="display:block;font-weight:600;margin-bottom:6px;cursor:pointer">
+          📷 Cargar imagen del gel para imprimir:
+          <input type="file" accept="image/*" id="gelFileInput" style="margin-top:4px;display:block">
+        </label>
+      </div>
+      <div id="gelPlaceholderText">🖼️ Espacio para la imagen del gel</div>
+      <img id="gelPreview" class="gel-preview-img" src="" alt="Gel Run">
     </div>
     
     <div class="footer">
@@ -644,17 +685,31 @@ function printRun(id) {
       <div>Sistema de Bitácora de Bandas Oligoclonales - Hematología</div>
       <div>Autor: Luis Alejandro Zúñiga Anchia</div>
     </div>
+
+    <script>
+      document.getElementById('gelFileInput').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = function(evt) {
+            const preview = document.getElementById('gelPreview');
+            preview.src = evt.target.result;
+            preview.style.display = 'inline-block';
+            document.getElementById('gelPlaceholderText').style.display = 'none';
+          };
+          reader.readAsDataURL(file);
+        }
+      });
+    </script>
   `;
   
   w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8">${css}</head><body>${body}</body></html>`);
   w.document.close();
-  
-  setTimeout(() => w.print(), 250);
 }
 
 // Buscar corridas
 function searchRuns() {
-  searchTerm = document.getElementById('searchBox').value.trim().toLowerCase();
+  searchTerm = (document.getElementById('searchBox').value || '').trim().toLowerCase();
   render();
 }
 
@@ -665,20 +720,20 @@ function clearSearch() {
   render();
 }
 
-// Renderizar tabla de corridas
+// Renderizar tabla de corridas con salvaguarda para propiedades opcionales/nulas
 function render() {
-  let runs = db.runs;
+  let runs = db.runs || [];
   
   // Aplicar filtro de búsqueda
   if (searchTerm) {
     runs = runs.filter(run => {
       const dateMatch = formatDate(run.date).toLowerCase().includes(searchTerm);
-      const obsMatch = run.obs.toLowerCase().includes(searchTerm);
-      const samplesMatch = run.samples.some(s => 
-        s.nombre.toLowerCase().includes(searchTerm) ||
-        s.cedula.toLowerCase().includes(searchTerm) ||
-        s.ID.toLowerCase().includes(searchTerm) ||
-        s.proc.toLowerCase().includes(searchTerm)
+      const obsMatch = (run.obs || '').toLowerCase().includes(searchTerm);
+      const samplesMatch = (run.samples || []).some(s =>
+        (s.nombre || '').toLowerCase().includes(searchTerm) ||
+        (s.cedula || '').toLowerCase().includes(searchTerm) ||
+        (s.ID || '').toLowerCase().includes(searchTerm) ||
+        (s.proc || '').toLowerCase().includes(searchTerm)
       );
       return dateMatch || obsMatch || samplesMatch;
     });
@@ -719,9 +774,9 @@ function render() {
             <td style="font-weight:600">${formatDate(run.date)}</td>
             <td>${esc(run.obs || '—')}</td>
             <td style="text-align:center">
-              <span style="background:${run.samples.length > 0 ? 'var(--success)' : 'var(--muted)'};
+              <span style="background:${(run.samples || []).length > 0 ? 'var(--success)' : 'var(--muted)'};
                 color:#fff;padding:4px 8px;border-radius:6px;font-weight:600">
-                ${run.samples.length}
+                ${(run.samples || []).length}
               </span>
             </td>
             <td class="no-print">
@@ -751,7 +806,7 @@ function exportJSON() {
   showToast('Datos exportados exitosamente', 'success');
 }
 
-// Importar JSON
+// Importar JSON con regeneración de ID para evitar colisiones
 function importJSON() {
   const input = document.createElement('input');
   input.type = 'file';
@@ -766,7 +821,25 @@ function importJSON() {
         const imported = JSON.parse(event.target.result);
         if (imported.runs && Array.isArray(imported.runs)) {
           if (confirm(`¿Importar ${imported.runs.length} corrida(s)? Esto NO sobrescribirá tus datos actuales.`)) {
-            db.runs.push(...imported.runs);
+            const processedRuns = imported.runs.map(run => {
+              // Regenerar ID de la corrida para evitar colisiones
+              const newRunId = uid();
+              const processedSamples = (run.samples || []).map(sample => {
+                // Regenerar ID de la muestra para evitar colisiones
+                return {
+                  ...sample,
+                  id: uid()
+                };
+              });
+
+              return {
+                ...run,
+                id: newRunId,
+                samples: processedSamples
+              };
+            });
+
+            db.runs.push(...processedRuns);
             save();
             updateStats();
             render();
